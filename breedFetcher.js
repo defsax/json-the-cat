@@ -1,41 +1,42 @@
 const request = require('request');
-const query = process.argv.slice(2).join(' ');
-
-//fetch only a specific breed
-const fetchBreed = function(breed) {
-  console.log(`Attempting to fetch ${breed} description...`);
-  request(`https://api.thecatapi.com/v1/breeds/search?q=${breed}`, (err, response, body) => {
-    //console.log(JSON.parse(body));
-    if (!err) {
-      if (body.length) {
-        console.log('Breed not found.');
-      } else {
-        let breedInfo = JSON.parse(body);
-        console.log(breedInfo[0].description);
-      }
-    } else if (err.code === 'ENOTFOUND') {
-      console.log(err.hostname, 'was not found.');
-    } else {
-      console.log(err);
-    }
-  });
-};
-
+  
 //get all the breeds
-const listBreeds = function() {
-  console.log('Attempting to fetch breed list...');
+const listAllBreeds = function(callback) {
+  let list = [];
 
   request('https://api.thecatapi.com/v1/breeds', (err, response, body) => {
-    const data = JSON.parse(body);
-    for (let i of data) {
-      console.log(i.name);
+    if (!err) {
+      const data = JSON.parse(body);
+
+      for (let i of data) {
+        list.push(i.name);
+      }
+      callback(null, list.join('\n'));
+    } else if (err.code === 'ENOTFOUND') {
+      callback(`${err.code}: ${err.hostname} was not found.`, null);
+    } else {
+      callback(err.code);
     }
   });
-  console.log('listbreed');
 };
 
-if (query === 'list cats') {
-  listBreeds();
-} else {
-  fetchBreed(query);
-}
+//fetch only a specific breed
+const fetchBreedDescription = function(breedName, callback) {
+  request(`https://api.thecatapi.com/v1/breeds/search?q=${breedName}`, (err, response, body) => {
+    if (!err) {
+      //if body length is 0, nothing was found
+      if (JSON.parse(body).length === 0) {
+        callback(null, 'Breed not found.');
+      } else {
+        let breedInfo = JSON.parse(body);
+        callback(null, breedInfo[0].description);
+      }
+    } else if (err.code === 'ENOTFOUND') {
+      callback(`${err.code}: ${err.hostname} was not found.`, null);
+    } else {
+      callback(err.code);
+    }
+  });
+};
+
+module.exports = { fetchBreedDescription, listAllBreeds };
