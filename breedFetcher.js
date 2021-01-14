@@ -1,28 +1,27 @@
 const request = require('request');
-const breed = process.argv.slice(2).join('');
+const query = process.argv.slice(2).join(' ');
 
-console.log(breed);
-
-const fetchBreed = function() {
-  console.log('Attempting to fetch breed description...');
-  request('https://api.thecatapi.com/v1/breeds', (err, response, body) => {
+//fetch only a specific breed
+const fetchBreed = function(breed) {
+  console.log(`Attempting to fetch ${breed} description...`);
+  request(`https://api.thecatapi.com/v1/breeds/search?q=${breed}`, (err, response, body) => {
+    //console.log(JSON.parse(body));
     if (!err) {
-      const data = JSON.parse(body);
-      for (let i of data) {
-        if (i.name === breed) {
-          console.log(i.description);
-        }
+      if (body.length) {
+        console.log('Breed not found.');
+      } else {
+        let breedInfo = JSON.parse(body);
+        console.log(breedInfo[0].description);
       }
+    } else if (err.code === 'ENOTFOUND') {
+      console.log(err.hostname, 'was not found.');
     } else {
-      console.log(err, response);
+      console.log(err);
     }
-    //console.log(JSON.parse(response));
-
   });
-
-  //console.log('fetchbreed');
 };
 
+//get all the breeds
 const listBreeds = function() {
   console.log('Attempting to fetch breed list...');
 
@@ -35,8 +34,8 @@ const listBreeds = function() {
   console.log('listbreed');
 };
 
-if (breed === 'listcats') {
+if (query === 'list cats') {
   listBreeds();
 } else {
-  fetchBreed();
+  fetchBreed(query);
 }
